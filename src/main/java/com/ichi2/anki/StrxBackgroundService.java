@@ -96,16 +96,16 @@ public class StrxBackgroundService extends Service {
 
         writeToLogs("Called onCreate() method.");
         timer = new Timer();
-        toast = Toast.makeText(this, "Background process was activated", Toast.LENGTH_SHORT);
+        //toast = Toast.makeText(this, "Background process was activated", Toast.LENGTH_SHORT);
 
         strxObj = this;
 
         mBuilder = new NotificationCompat.Builder(this);
 
         // Dodajemy podstawowe (wymagane) elementy
-        mBuilder.setContentTitle("Tytuł powiadomienia !! ");
-        mBuilder.setContentText("Opis powiadomienia");
-        mBuilder.setSmallIcon(R.drawable.ic_dialog_alert);
+        mBuilder.setContentTitle("Learning offline");
+        mBuilder.setContentText("Background learning has been activated");
+        mBuilder.setSmallIcon(R.drawable.ic_feedback_black_24dp);
 
         // Tworzymy intent
         ////  Intent mIntent = new Intent(this, MainActivity.class);
@@ -132,7 +132,8 @@ public class StrxBackgroundService extends Service {
         notes = intent.getLongArrayExtra("notes");
         sfld = intent.getStringArrayExtra("sfld");
 
-        showToast("Your service has been started " + foo );
+        //showToast("Your service has been started " + foo );
+        Toast.makeText(this, "service onStartCommand()", Toast.LENGTH_SHORT).show();
 
         timer.scheduleAtFixedRate(timerTask, 10 * 1000, 10 * 1000);
 
@@ -164,6 +165,13 @@ public class StrxBackgroundService extends Service {
 
     protected void stopStrxService(){
 
+
+    }
+
+    @Override
+    public void onDestroy() {
+        Toast.makeText(this, "service onDestroy()", Toast.LENGTH_SHORT).show();
+        clearTimerSchedule();
         stopSelf();
     }
 

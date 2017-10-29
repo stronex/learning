@@ -22,6 +22,7 @@
 package com.ichi2.anki;
 
 import android.Manifest;
+import android.app.ActivityManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -682,9 +683,9 @@ public class DeckPicker extends NavigationDrawerActivity implements
 
         }
     }
-
+    private Intent intent;
     protected void strx(DB mDb){
-        Intent intent = new Intent(this, StrxBackgroundService.class);
+        if (intent == null) intent = new Intent(this, StrxBackgroundService.class);
         intent.putExtra("foo", "bar");
 
 
@@ -732,14 +733,26 @@ public class DeckPicker extends NavigationDrawerActivity implements
             }
         }
 
-
-        startService( intent );
-
+        if(isMyServiceRunning(StrxBackgroundService.class)){
+            stopService(intent);
+            //Toast.makeText(this, "Background service has been stopped", Toast.LENGTH_SHORT).show();
+        }else {
+            startService(intent);
+            //Toast.makeText(this, "Background service has been activated", Toast.LENGTH_SHORT).show();
+        }
 
 
 
     }
-
+    private boolean isMyServiceRunning(Class<?> serviceClass) {
+        ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+            if (serviceClass.getName().equals(service.service.getClassName())) {
+                return true;
+            }
+        }
+        return false;
+    }
     private void stopStrxService() {
         Intent serviceIntent = new Intent(this, StrxBackgroundService.class);
         stopService(serviceIntent);
