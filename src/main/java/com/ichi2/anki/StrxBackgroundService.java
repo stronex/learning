@@ -16,6 +16,8 @@ import android.widget.Toast;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import static org.acra.ACRA.log;
+
 
 public class StrxBackgroundService extends Service {
 
@@ -27,7 +29,7 @@ public class StrxBackgroundService extends Service {
     private String foo;
     private long notes[];
     private String sfld[];
-    private int count = 1;
+    private int count = 0;
 
     private NotificationCompat.Builder mBuilder;
 
@@ -39,18 +41,43 @@ public class StrxBackgroundService extends Service {
 
            // String sfldd = sfld[1];
             //showToast("Service working " + foo + " :: " + sfldd.toString() );
+            Context context = getApplicationContext();
 
             if(count == 99){
                 count = 0;
-            }else {
+            }else{
+                if(count == 0) {
+                    //close poprzednie notification - notification o aktywacji Learning offline
+                    log.i("!!#@", context.toString());
+                    String ns = Context.NOTIFICATION_SERVICE;
+                    NotificationManager nMgr = (NotificationManager) context.getSystemService(ns);
+                    nMgr.cancel(0);
+                }
                 count++;
+
+
             }
             //NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(strxObj);
-
+            String CHANNEL_ID = "my_channel_01";
+            NotificationCompat.Builder mBuilder =
+                    new NotificationCompat.Builder(strxObj);
             // Dodajemy podstawowe (wymagane) elementy
             mBuilder.setContentTitle("Word: " + sfld[count] );
             mBuilder.setContentText("..");
             mBuilder.setSmallIcon(R.drawable.ic_dialog_alert);//ic_dialog_alert
+
+
+
+            //close poprzednie notification
+            log.i("!!#@", context.toString());
+            String ns = Context.NOTIFICATION_SERVICE;
+            NotificationManager nMgr = (NotificationManager) context.getSystemService(ns);
+            nMgr.cancel(count-1);
+
+
+
+                    // Set PendingIntent into Notification
+            //mBuilder .setContentIntent(pIntent);
 
         //    mBuilder.setAutoCancel(true);
 
@@ -62,20 +89,35 @@ public class StrxBackgroundService extends Service {
             mBuilder.setVibrate(new long[] { 1000, 1000});
 
            // mBuilder.setSound()
-            Context context = getApplicationContext();
+
 
             // Tworzymy intent
 
 
             Intent mIntent = new Intent(context, Strx.class);
-            mIntent.putExtra("note", "@#" + sfld[count]);
+            mIntent.putExtra("note", sfld[count]);
+            mIntent.putExtra("nId", count);
             mIntent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
             PendingIntent mPendingIntent = PendingIntent.getActivity(context, count, mIntent, 0);
+
+            // Open NotificationView.java Activity
+            //Intent intent = new Intent(context, Strx.class);
+            PendingIntent pIntent = PendingIntent.getActivity(context, count, mIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT);
+
+            // Add an Action Button below Notification
+            mBuilder.addAction(R.drawable.ic_action_cancel, "OK", pIntent);
+            // Add an Action Button below Notification
+            mBuilder.addAction(R.drawable.ic_action_cancel, "Close", pIntent);
 
             //mIntent.putExtra("note", "@#" + sfld[count]);
             // I go łączymy
 
              mBuilder.setContentIntent(mPendingIntent);
+
+            //!!
+
+
 
             NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
             mNotificationManager.notify(count, mBuilder.build());
@@ -124,7 +166,7 @@ public class StrxBackgroundService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        writeToLogs("Called onStartCommand() methond");
+        writeToLogs("Called onStartCommand() method");
         clearTimerSchedule();
         initTask();
 

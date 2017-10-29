@@ -35,11 +35,11 @@ public class Strx extends Activity {
         }
 
         //word +=  bundle.getString("note");
+        int nId = extras.getInt("nId");
 
+        showToast(word);
 
-        showToast("!!" + word);
-
-        showDialog( "!!" + word );
+        showDialog(word);
         //finish();
     }
 
@@ -51,7 +51,7 @@ public class Strx extends Activity {
         alertDialog.setButton(AlertDialog.BUTTON_POSITIVE, "OK", new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int which) {
                 dialog.dismiss();
-                //finish();
+                //finish(); //zamyka okno Strx.action (to okno w tle)
             }
         });
         alertDialog.setButton(AlertDialog.BUTTON_NEUTRAL, "Close", new DialogInterface.OnClickListener() {
