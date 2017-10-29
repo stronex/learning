@@ -3,14 +3,21 @@ package com.ichi2.anki;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.media.RingtoneManager;
 import android.net.Uri;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Message;
+import android.os.Messenger;
 import android.provider.Settings;
 import android.support.v4.app.NotificationCompat;
+import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
+import android.view.View;
 import android.widget.Toast;
 
 import java.util.Timer;
@@ -39,24 +46,23 @@ public class StrxBackgroundService extends Service {
         @Override
         public void run() {
 
+
            // String sfldd = sfld[1];
             //showToast("Service working " + foo + " :: " + sfldd.toString() );
             Context context = getApplicationContext();
 
-            if(count == 99){
-                count = 0;
-            }else{
-                if(count == 0) {
+
+            if(count == 0) {
                     //close poprzednie notification - notification o aktywacji Learning offline
                     log.i("!!#@", context.toString());
                     String ns = Context.NOTIFICATION_SERVICE;
                     NotificationManager nMgr = (NotificationManager) context.getSystemService(ns);
                     nMgr.cancel(0);
-                }
-                count++;
-
-
             }
+            if(count == 3){
+                count = 0;
+            }
+            count++;
             //NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(strxObj);
             String CHANNEL_ID = "my_channel_01";
             NotificationCompat.Builder mBuilder =
@@ -64,12 +70,12 @@ public class StrxBackgroundService extends Service {
             // Dodajemy podstawowe (wymagane) elementy
             mBuilder.setContentTitle("Word: " + sfld[count] );
             mBuilder.setContentText("..");
-            mBuilder.setSmallIcon(R.drawable.ic_dialog_alert);//ic_dialog_alert
+            mBuilder.setSmallIcon(R.drawable.ic_feedback_black_24dp);//ic_dialog_alert
 
 
 
             //close poprzednie notification
-            log.i("!!#@", context.toString());
+            Log.i("!!#@", context.toString());
             String ns = Context.NOTIFICATION_SERVICE;
             NotificationManager nMgr = (NotificationManager) context.getSystemService(ns);
             nMgr.cancel(count-1);
@@ -97,8 +103,18 @@ public class StrxBackgroundService extends Service {
             Intent mIntent = new Intent(context, Strx.class);
             mIntent.putExtra("note", sfld[count]);
             mIntent.putExtra("nId", count);
+
+            /////
+            // Intent startService = new Intent(context, SERVICE.class)
+            //mIntent.putExtra("MESSENGER", new Messenger(messageHandler));
+            //context.startService(startService);
+            /////
+
             mIntent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
             PendingIntent mPendingIntent = PendingIntent.getActivity(context, count, mIntent, 0);
+
+
+
 
             // Open NotificationView.java Activity
             //Intent intent = new Intent(context, Strx.class);
@@ -125,7 +141,25 @@ public class StrxBackgroundService extends Service {
 
         }
     }
+/*
+    public static Handler messageHandler = new MessageHandler();
+    public static class MessageHandler extends Handler {
+        @Override
+        public void handleMessage(Message message) {
+            int state = message.arg1;
 
+            switch (state) {
+                case HIDE:
+                    //progressBar.setVisibility(View.GONE);
+                    break;
+                case SHOW:
+                    //progressBar.setVisibility(View.VISIBLE);
+                    break;
+            }
+
+        }
+    }
+*/
     private void showToast(String text) {
         toast.setText(text);
         toast.show();
@@ -136,7 +170,13 @@ public class StrxBackgroundService extends Service {
     public void onCreate() {
         super.onCreate();
 
-        writeToLogs("Called onCreate() method.");
+       // writeToLogs("Background learning has been started");
+
+        LocalBroadcastManager.getInstance(this).registerReceiver(mMessageReceiver,
+                new IntentFilter("my-event"));
+
+        Log.i("!@#", "broadcast");
+
         timer = new Timer();
         //toast = Toast.makeText(this, "Background process was activated", Toast.LENGTH_SHORT);
 
@@ -175,7 +215,8 @@ public class StrxBackgroundService extends Service {
         sfld = intent.getStringArrayExtra("sfld");
 
         //showToast("Your service has been started " + foo );
-        Toast.makeText(this, "service onStartCommand()", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "Background learning has been started", Toast.LENGTH_SHORT).show();
+        Log.i("!@#", "Start StrxBackground onStartCommand()");
 
         timer.scheduleAtFixedRate(timerTask, 10 * 1000, 10 * 1000);
 
@@ -212,14 +253,31 @@ public class StrxBackgroundService extends Service {
 
     @Override
     public void onDestroy() {
-        Toast.makeText(this, "service onDestroy()", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "Background learning has been stopped", Toast.LENGTH_SHORT).show();
         clearTimerSchedule();
         stopSelf();
     }
 
 
 
+////////////////////
 
+
+
+    // handler for received Intents for the "my-event" event
+    private BroadcastReceiver mMessageReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            // Extract data included in the Intent
+            String message = intent.getStringExtra("message");
+            int nId = intent.getIntExtra("nId", 0);
+            String nWord = intent.getStringExtra("nWord");
+            int state = intent.getIntExtra("state", 0);
+            Log.i("!@#", "Got message: " + message + ", nId=" + nId + ", note=" + nWord + ", state=" + state);
+
+            sfld[nId] += ", s=" + state;
+        }
+    };
 
 
 }
