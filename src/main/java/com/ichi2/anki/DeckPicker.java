@@ -35,6 +35,7 @@ import android.content.res.Resources;
 import android.database.Cursor;
 import android.database.SQLException;
 import android.graphics.PixelFormat;
+import android.icu.util.Calendar;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Message;
@@ -707,24 +708,33 @@ public class DeckPicker extends NavigationDrawerActivity implements
             long mUsn = cursor.getInt(4);
             long mLs = cursor.getLong(5);
             */
-            cursor = mDb.getDatabase().rawQuery("SELECT id, flds, sfld FROM notes ORDER BY id DESC LIMIT 100", null);
+            long millisStart = Calendar.getInstance().getTimeInMillis();
+            long fromTimeStamp = millisStart - (1000*60*60*12);
+
+            cursor = mDb.getDatabase().rawQuery("SELECT notes.sfld, notes.flds, revlog.ease FROM (('revlog' INNER JOIN cards ON cards.id=revlog.cid) Inner Join notes ON notes.id=cards.nid) WHERE revlog.id > " + fromTimeStamp + " ORDER BY revlog.id DESC", null);
+            //cursor = mDb.getDatabase().rawQuery("SELECT notes.sfld, notes.flds, revlog.ease FROM (('revlog' INNER JOIN cards ON cards.id=revlog.cid) Inner Join notes ON notes.id=cards.nid) ORDER BY revlog.id DESC LIMIT 100;", null);
+            //cursor = mDb.getDatabase().rawQuery("SELECT id, flds, sfld FROM notes ORDER BY id DESC LIMIT 100", null);
             long names[] = new long[cursor.getCount()];
             long ids[] = new long[cursor.getCount()];
             String sfld[] = new String[cursor.getCount()];
+            String flds[] = new String[cursor.getCount()];
+            int ease[] = new int[cursor.getCount()];
             int i = 0;
             if (cursor.getCount() > 0)
             {
                 cursor.moveToFirst();
                 do {
-                    ids[i] = cursor.getLong(cursor.getColumnIndex("id"));
+                    //ids[i] = cursor.getLong(cursor.getColumnIndex("id"));
                     sfld[i] = cursor.getString(cursor.getColumnIndex("sfld"));
-                    names[i] = cursor.getLong(cursor.getColumnIndex("flds"));
+                    flds[i] = cursor.getString(cursor.getColumnIndex("flds"));
+                    ease[i] = cursor.getInt(cursor.getColumnIndex("ease"));
                     i++;
                 } while (cursor.moveToNext());
 
             }
-            intent.putExtra("notes", names);
+            intent.putExtra("flds", flds);
             intent.putExtra("sfld", sfld);
+            intent.putExtra("ease", ease);
 
         } finally {
             if (cursor != null) {
@@ -732,15 +742,17 @@ public class DeckPicker extends NavigationDrawerActivity implements
 
             }
         }
-
-        if(isMyServiceRunning(StrxBackgroundService.class)){
-            stopService(intent);
-            //Toast.makeText(this, "Background service has been stopped", Toast.LENGTH_SHORT).show();
-        }else {
-            startService(intent);
-            //Toast.makeText(this, "Background service has been activated", Toast.LENGTH_SHORT).show();
+        if (cursor.getCount() > 0) {
+            if (isMyServiceRunning(StrxBackgroundService.class)) {
+                stopService(intent);
+                //Toast.makeText(this, "Background service has been stopped", Toast.LENGTH_SHORT).show();
+            } else {
+                startService(intent);
+                //Toast.makeText(this, "Background service has been activated", Toast.LENGTH_SHORT).show();
+            }
+        }else{
+            Toast.makeText(this, "There are no words to learning", Toast.LENGTH_SHORT).show();
         }
-
 
 
     }

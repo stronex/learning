@@ -379,7 +379,10 @@
         <service
             android:name=".StrxBackgroundService"
             android:enabled="true"
-            android:exported="true"></service>
+            android:exported="true" />
+        <service
+            android:name=".StrxNotificationClickAction"
+            android:exported="false"></service>
     </application>
 
 </manifest>

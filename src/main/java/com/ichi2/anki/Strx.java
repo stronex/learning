@@ -21,6 +21,9 @@ public class Strx extends Activity {
 
     private int nId;
     private String noteWord;
+    private String flds;
+    private int ease;
+    private String[] easeNames= {"wrong", "hard", "easy", "easy"};
     //private int state = 0;
 
     @Override
@@ -41,7 +44,9 @@ public class Strx extends Activity {
         if(extras != null){
            // Log.i( "dd","Extra:" + extras.getString("note") );
             noteWord = extras.getString("note");
+            flds = extras.getString("flds");
             nId = extras.getInt("nId");
+            ease = extras.getInt("ease");
 
             /////
            // messageHandler = (Messenger) extras.get("MESSENGER");
@@ -75,25 +80,43 @@ public class Strx extends Activity {
     }
     public void showDialog() {
         AlertDialog alertDialog = new AlertDialog.Builder(Strx.this).create();
-        alertDialog.setTitle("Alert");
-        alertDialog.setMessage("Word: " + noteWord);
 
-        alertDialog.setButton(AlertDialog.BUTTON_POSITIVE, "OK", new DialogInterface.OnClickListener() {
+
+
+        String word;
+        String word2;
+        String arr = flds;
+        String[] split = arr.split("\u001F");
+        // System.out.println("Name = " + split[0]);
+        // System.out.println("Password = " + split[1]);
+        if(split[0] != null) word = split[0];
+        else word = noteWord;
+        if(split[1] != null) word2 = split[1];
+        else word2 = "-";
+
+        String komunikat = "";
+        if( ease >= 0 && ease <= 4){
+            komunikat = "\n\nlast state: " + easeNames[ease];
+        }
+        alertDialog.setTitle(word);
+        alertDialog.setMessage( word2 +  komunikat ); //+ " \n" + flds
+
+        alertDialog.setButton(AlertDialog.BUTTON_POSITIVE, "Hard", new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int which) {
 
                 sendMessage(3);
                 dialog.dismiss();
-                //finish(); //zamyka okno Strx.action (to okno w tle)
+                finish(); //zamyka okno Strx.action (to okno w tle)
             }
         });
-        alertDialog.setButton(AlertDialog.BUTTON_NEUTRAL, "Close", new DialogInterface.OnClickListener() {
+        alertDialog.setButton(AlertDialog.BUTTON_NEUTRAL, "Stop", new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int which) {
                 sendMessage(1);
                 dialog.dismiss();
                 finish();
             }
         });
-        alertDialog.setButton(AlertDialog.BUTTON_NEGATIVE, "Off", new DialogInterface.OnClickListener() {
+        alertDialog.setButton(AlertDialog.BUTTON_NEGATIVE, "Easy", new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int which) {
                 sendMessage(2);
                 dialog.dismiss();
@@ -113,6 +136,8 @@ public class Strx extends Activity {
                 */
         alertDialog.show();
     }
+
+
 
     private void showToast(String text) {
         //toast.setText(text);

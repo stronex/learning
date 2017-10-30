@@ -31,27 +31,34 @@ public class StrxBackgroundService extends Service {
     public StrxBackgroundService() {
     }
 
+    private  int intervalTime = 60;//interwal czasowy w sekundach
+
     private StrxBackgroundService strxObj;
     private Toast toast;
     private String foo;
-    private long notes[];
+    private String flds[];
+    private int cardState[];
+    private int ease[];
+    private int iteration = 0;
     private String sfld[];
     private int count = 0;
+    private int notificationId = 0;
 
     private NotificationCompat.Builder mBuilder;
-
+    private Intent intent;
+    private Context context;
+    private PendingIntent pIntent;
+    private int maxOfNotes;
     private Timer timer;
     private TimerTask timerTask;
     private class MyTimerTask extends TimerTask {
+
         @Override
         public void run() {
 
+            context = getApplicationContext();
 
-           // String sfldd = sfld[1];
-            //showToast("Service working " + foo + " :: " + sfldd.toString() );
-            Context context = getApplicationContext();
-
-
+            /*
             if(count == 0) {
                     //close poprzednie notification - notification o aktywacji Learning offline
                     log.i("!!#@", context.toString());
@@ -59,86 +66,180 @@ public class StrxBackgroundService extends Service {
                     NotificationManager nMgr = (NotificationManager) context.getSystemService(ns);
                     nMgr.cancel(0);
             }
-            if(count == 3){
+            */
+
+
+            if(count == maxOfNotes){
                 count = 0;
+                iteration++;
             }
-            count++;
-            //NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(strxObj);
-            String CHANNEL_ID = "my_channel_01";
-            NotificationCompat.Builder mBuilder =
-                    new NotificationCompat.Builder(strxObj);
-            // Dodajemy podstawowe (wymagane) elementy
-            mBuilder.setContentTitle("Word: " + sfld[count] );
-            mBuilder.setContentText("..");
-            mBuilder.setSmallIcon(R.drawable.ic_feedback_black_24dp);//ic_dialog_alert
 
 
-
-            //close poprzednie notification
-            Log.i("!!#@", context.toString());
-            String ns = Context.NOTIFICATION_SERVICE;
-            NotificationManager nMgr = (NotificationManager) context.getSystemService(ns);
-            nMgr.cancel(count-1);
-
-
-
-                    // Set PendingIntent into Notification
-            //mBuilder .setContentIntent(pIntent);
-
-        //    mBuilder.setAutoCancel(true);
-
-            //Uri alarmSound;
-            //alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
-            //mBuilder.setSound(alarmSound);
-            mBuilder.setSound(Settings.System.DEFAULT_NOTIFICATION_URI);
-
-            mBuilder.setVibrate(new long[] { 1000, 1000});
-
-           // mBuilder.setSound()
-
-
-            // Tworzymy intent
-
-
-            Intent mIntent = new Intent(context, Strx.class);
-            mIntent.putExtra("note", sfld[count]);
-            mIntent.putExtra("nId", count);
-
-            /////
-            // Intent startService = new Intent(context, SERVICE.class)
-            //mIntent.putExtra("MESSENGER", new Messenger(messageHandler));
-            //context.startService(startService);
-            /////
-
-            mIntent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-            PendingIntent mPendingIntent = PendingIntent.getActivity(context, count, mIntent, 0);
+            //stop = 1
+            //easy = 2
+            //hard = 3
 
 
 
 
-            // Open NotificationView.java Activity
-            //Intent intent = new Intent(context, Strx.class);
-            PendingIntent pIntent = PendingIntent.getActivity(context, count, mIntent,
-                    PendingIntent.FLAG_UPDATE_CURRENT);
+            Boolean flag = true;
+            int n = count;
+            for (int i = 0; i < maxOfNotes; i++) {
+                if( cardState[n] == 3 ){
+                    count = n;
+                    flag = false;
+                    break;
+                }
+                n++;
+                if(n == maxOfNotes){
+                    n = 0;
+                }
+            }
+            Boolean flag2 = true;
+            if(flag){ //nie ma kart state 3
+                ;
+                for (int i = 0; i < maxOfNotes; i++) {
+                    //szuka kart state = 2
+                    if( cardState[n] == 2 ){
+                        count = n;
+                        flag2 = false;
+                        break;
+                    }
+                    n++;
+                    if(n == maxOfNotes){
+                        n = 0;
+                    }
+                }
+            }
+            if(flag && flag2){
+                //nie ma kart o state = 3 ani state = 2
+                stopSelf();
+            }else{
 
-            // Add an Action Button below Notification
-            mBuilder.addAction(R.drawable.ic_action_cancel, "OK", pIntent);
-            // Add an Action Button below Notification
-            mBuilder.addAction(R.drawable.ic_action_cancel, "Close", pIntent);
 
-            //mIntent.putExtra("note", "@#" + sfld[count]);
-            // I go łączymy
+                notificationId = count;
 
-             mBuilder.setContentIntent(mPendingIntent);
+                String word;
+                String word2;
+                String arr = flds[count];
+                String[] split = arr.split("\u001F");
+                // System.out.println("Name = " + split[0]);
+                // System.out.println("Password = " + split[1]);
+                if (split[0] != null) word = split[0];
+                else word = sfld[count];
+                if (split[1] != null) word2 = split[1];
+                else word2 = "-";
+                //NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(strxObj);
+                String CHANNEL_ID = "my_channel_01";
+                NotificationCompat.Builder mBuilder =
+                        new NotificationCompat.Builder(strxObj);
+                // Dodajemy podstawowe (wymagane) elementy
+                mBuilder.setContentTitle(word);
+                mBuilder.setContentText(null);
+                mBuilder.setSmallIcon(R.drawable.ic_feedback_black_24dp);//ic_dialog_alert
 
-            //!!
+
+                //hide poprzednie notification
+                // Log.i("!!#@", context.toString());
+                String ns = Context.NOTIFICATION_SERVICE;
+                NotificationManager nMgr = (NotificationManager) context.getSystemService(ns);
+                nMgr.cancel(notificationId - 1);//notificationId = count
 
 
+                // Set PendingIntent into Notification
+                //mBuilder .setContentIntent(pIntent);
 
-            NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-            mNotificationManager.notify(count, mBuilder.build());
-            //mIntent.putExtra("note", "@#" + sfld[count]);
+                //    mBuilder.setAutoCancel(true);
 
+                //Uri alarmSound;
+                //alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+                //mBuilder.setSound(alarmSound);
+                mBuilder.setSound(Settings.System.DEFAULT_NOTIFICATION_URI);
+
+                mBuilder.setVibrate(new long[]{100, 100});
+
+                // mBuilder.setSound()
+
+
+                // Tworzymy intent
+
+
+                Intent mIntent = new Intent(context, Strx.class);
+                mIntent.putExtra("note", sfld[count]);
+                mIntent.putExtra("flds", flds[count]);
+                mIntent.putExtra("ease", ease[count]);
+                mIntent.putExtra("nId", count);
+
+                /////
+                // Intent startService = new Intent(context, SERVICE.class)
+                //mIntent.putExtra("MESSENGER", new Messenger(messageHandler));
+                //context.startService(startService);
+                /////
+
+                mIntent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                PendingIntent mPendingIntent = PendingIntent.getActivity(context, notificationId, mIntent, 0);
+
+
+                Intent intent3 = new Intent(context, StrxNotificationClickAction.class);
+                //LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
+                intent3.putExtra("message", "Message From notification clicked button Off");
+                intent3.putExtra("nId", count);
+                intent3.putExtra("state", 1);
+/*
+            Intent intentBroadcast = new Intent("my-event");
+            // add data
+            intentBroadcast.putExtra("message", "Message From notification clicked button off");
+            intentBroadcast.putExtra("nId", count);
+            intentBroadcast.putExtra("nWord", "--");
+            intentBroadcast.putExtra("state", 1);
+            */
+                PendingIntent pIntent3 = PendingIntent.getService(context, 11, intent3, PendingIntent.FLAG_UPDATE_CURRENT);//PendingIntent.FLAG_UPDATE_CURRENT
+                //.getBroadcast(context, 11, intent3, PendingIntent.FLAG_UPDATE_CURRENT);
+                //.getService(context, notificationId, intent3, 0);//PendingIntent.FLAG_UPDATE_CURRENT
+
+                // Add an Action Button below Notification
+                mBuilder.addAction(R.drawable.av_stop, "Stop", pIntent3);
+
+
+                // Open NotificationView.java Activity
+                //Intent intent = new Intent(context, Strx.class);
+                Intent intent2 = new Intent(context, StrxNotificationClickAction.class);
+                //LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
+                intent2.putExtra("message", "Message From notification clicked button Easy");
+                intent2.putExtra("nId", count);
+                intent2.putExtra("state", 2);
+                PendingIntent pIntent2 = PendingIntent.getService(context, 22, intent2, PendingIntent.FLAG_UPDATE_CURRENT);
+
+                // Add an Action Button below Notification
+                mBuilder.addAction(R.drawable.av_pause, "Easy", pIntent2);
+
+
+                Intent intent = new Intent(context, StrxNotificationClickAction.class);
+                //LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
+                intent.putExtra("message", "Message From notification clicked button Hard");
+                intent.putExtra("nId", count);
+                intent.putExtra("state", 3);
+                PendingIntent pIntent = PendingIntent.getService(context, 33, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+
+                // Add an Action Button below Notification
+                mBuilder.addAction(R.drawable.av_play, "Hard", pIntent);
+
+
+                //mIntent.putExtra("note", "@#" + sfld[count]);
+                // I go łączymy
+
+                mBuilder.setContentIntent(mPendingIntent);
+
+                //!!
+
+
+                NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+                mNotificationManager.notify(notificationId, mBuilder.build());
+                //mIntent.putExtra("note", "@#" + sfld[count]);
+
+                //context.startService(GPSService);
+                count++;
+            }
         }
     }
 /*
@@ -175,29 +276,12 @@ public class StrxBackgroundService extends Service {
         LocalBroadcastManager.getInstance(this).registerReceiver(mMessageReceiver,
                 new IntentFilter("my-event"));
 
-        Log.i("!@#", "broadcast");
+        Log.i("!@#", "Broadcast activated");
 
         timer = new Timer();
         //toast = Toast.makeText(this, "Background process was activated", Toast.LENGTH_SHORT);
 
-        strxObj = this;
 
-        mBuilder = new NotificationCompat.Builder(this);
-
-        // Dodajemy podstawowe (wymagane) elementy
-        mBuilder.setContentTitle("Learning offline");
-        mBuilder.setContentText("Background learning has been activated");
-        mBuilder.setSmallIcon(R.drawable.ic_feedback_black_24dp);
-
-        // Tworzymy intent
-        ////  Intent mIntent = new Intent(this, MainActivity.class);
-        // PendingIntent mPendingIntent = PendingIntent.getActivity(this, 0, mIntent, 0);
-
-        // I go łączymy
-        // mBuilder.setContentIntent(mPendingIntent);
-
-        NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        mNotificationManager.notify(0, mBuilder.build());
 
 
 
@@ -211,14 +295,51 @@ public class StrxBackgroundService extends Service {
         initTask();
 
         foo = intent.getStringExtra("foo").toString();
-        notes = intent.getLongArrayExtra("notes");
+        flds = intent.getStringArrayExtra("flds");
         sfld = intent.getStringArrayExtra("sfld");
+        ease = intent.getIntArrayExtra("ease");
+/*
+                -- which button you pushed to score your recall.
+                -- review:  1(wrong), 2(hard), 3(ok), 4(easy)
+                -- learn/relearn:   1(wrong), 2(ok), 3(easy)
+*/
+        cardState = new int[flds.length];
+        for (int i = 0; i < sfld.length; i++) {
+            Log.i("!@#", "cardState[" + i + "], flds.length=" + flds.length);
+            if(ease[i] >= 3) cardState[i] = 2;
+            else cardState[i] = 3;
+        }
+       // state[] = new int[flds.length];
 
         //showToast("Your service has been started " + foo );
         Toast.makeText(this, "Background learning has been started", Toast.LENGTH_SHORT).show();
         Log.i("!@#", "Start StrxBackground onStartCommand()");
 
-        timer.scheduleAtFixedRate(timerTask, 10 * 1000, 10 * 1000);
+        maxOfNotes = sfld.length;
+
+        strxObj = this;
+        mBuilder = new NotificationCompat.Builder(this);
+
+        // Dodajemy podstawowe (wymagane) elementy
+        mBuilder.setContentTitle("Learning offline");
+        mBuilder.setContentText("There are " + maxOfNotes + " words to learning");
+        mBuilder.setSmallIcon(R.drawable.ic_feedback_black_24dp);
+
+
+
+        // Tworzymy intent
+        ////  Intent mIntent = new Intent(this, MainActivity.class);
+        // PendingIntent mPendingIntent = PendingIntent.getActivity(this, 0, mIntent, 0);
+
+        // I go łączymy
+        // mBuilder.setContentIntent(mPendingIntent);
+
+        NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        mNotificationManager.notify(0, mBuilder.build());
+
+
+
+        timer.scheduleAtFixedRate(timerTask, 1000 * intervalTime, 1000 * intervalTime);
 
         return super.onStartCommand(intent, flags, startId);
     }
@@ -275,7 +396,11 @@ public class StrxBackgroundService extends Service {
             int state = intent.getIntExtra("state", 0);
             Log.i("!@#", "Got message: " + message + ", nId=" + nId + ", note=" + nWord + ", state=" + state);
 
-            sfld[nId] += ", s=" + state;
+            //sfld[nId] += ", s=" + state;
+            cardState[nId] = state;
+
+            NotificationManager notificationManager = (NotificationManager) getApplicationContext().getSystemService(Context.NOTIFICATION_SERVICE);
+            notificationManager.cancel(nId);
         }
     };
 
